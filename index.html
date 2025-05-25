@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>BandaFX Charting</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <style>
+    body {
+      margin: 0;
+      background-color: #131722;
+      color: #d1d4dc;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .controls {
+      padding: 10px;
+      background-color: #1e222d;
+      border-bottom: 1px solid #2a2e39;
+      display: flex;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 100;
+      flex-direction: column;
+      height: 100vh;
+      width: 200px;
+      transform: translateX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .controls.hidden {
+      transform: translateX(200px);
+    }
+
+    .toggle-controls {
+      position: fixed;
+      top: 50%;
+      right: 200px;
+      transform: translateY(-50%);
+      background: #1e222d;
+      padding: 15px 5px;
+      cursor: pointer;
+      border-radius: 4px 0 0 4px;
+      border: 1px solid #2a2e39;
+      border-right: none;
+      z-index: 101;
+      transition: right 0.3s ease;
+    }
+
+    .toggle-controls.hidden {
+      right: 0;
+    }
+
+    .toggle-controls .arrow {
+      color: #d1d4dc;
+      font-size: 20px;
+      display: block;
+      transform: rotate(0);
+      transition: transform 0.3s ease;
+    }
+
+    .toggle-controls.hidden .arrow {
+      transform: rotate(180deg);
+    }
+
+    .charts-container {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      margin-right: 200px;
+      transition: margin-right 0.3s ease;
+    }
+
+    .chart-container {
+      flex: 1;
+      min-height: 400px;
+      position: relative;
+    }
+
+    .top-row, .bottom-row {
+      display: flex;
+      flex-wrap: nowrap;
+      height: 50%;
+    }
+
+    .chart {
+      border: 1px solid #2a2e39;
+      height: 100%;
+      width: 100%;
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      background: #1e222d;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    
+    .modal h3 {
+      margin: 0 0 20px 0;
+      color: #d1d4dc;
+    }
+    
+    .modal-content label {
+      display: block;
+      color: #d1d4dc;
+      margin-bottom: 5px;
+    }
+    
+    .modal-content small {
+      display: block;
+      color: #4f5966;
+      margin-bottom: 5px;
+    }
+    
+    .remove-button {
+      width: 100%;
+      background: #ff4a68;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      cursor: pointer;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .create-button, .cancel-button {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .create-button {
+      background: #2962ff;
+      color: white;
+    }
+    
+    .cancel-button {
+      background: #363a45;
+      color: #d1d4dc;
+    }
+      background: #2a2e39;
+      color: #d1d4dc;
+      padding: 5px;
+      margin: 5px 0;
+      width: 100%;
+    }
+
+    .modal button {
+      margin-top: 10px;
+    }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 999;
+    }
+    
+    .tab-bar {
+      display: flex;
+      background: #1e222d;
+      padding: 5px;
+      border-bottom: 1px solid #2a2e39;
+    }
+  
+    .tab {
+      padding: 8px 15px;
+      background: #2a2e39;
+      margin-right: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+  
+    .tab.active {
+      background: #363c4e;
+    }
+  
+    .tab-close {
+      margin-left: 8px;
+      color: #666;
+      font-size: 14px;
+    }
+  
+    .new-tab {
+      padding: 8px 15px;
+      background: #2962ff;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  
+    .pair-selector {
+      background: #2a2e39;
+      color: #d1d4dc;
+      padding: 5px;
+      margin: 5px 0;
+      width: 100%;
+      border: 1px solid #363c4e;
+      border-radius: 4px;
+    }
+    
+    .app-title {
+      background-color: #1e222d;
+      color: #d1d4dc;
+      padding: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      border-bottom: 1px solid #2a2e39;
+    }
+    
+    .contact-button {
+      background-color: #2962ff;
+      color: #ffffff;
+      border: none;
+      padding: 8px 15px;
+      margin-left: auto;
+      cursor: pointer;
+      border-radius: 4px;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .contact-button:hover {
+      background-color: #1e4bd8;
+    }
+  </style>
+  
+  <!-- TradingView Widget -->
+  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+</head>
+<body>
+  <div class="app-title">BandaFX</div>
+  <div class="tab-bar" id="tabBar">
+    <div class="new-tab" onclick="createNewTab()">+ New Tab</div>
+  </div>
+
+  <div id="toggleControls" class="toggle-controls">
+    <span class="arrow">›</span>
+  </div>
+
+  <div class="controls" id="controlsPanel">
+    <select id="chartCountSelector" onchange="updateCurrentLayout(this.value)">
+      <option value="">Select Chart Count</option>
+      <option value="1">1 Chart</option>
+      <option value="2">2 Charts</option>
+      <option value="4">4 Charts</option>
+      <option value="6">6 Charts</option>
+      <option value="8">8 Charts</option>
+    </select>
+    <select id="pairSelector" class="pair-selector" onchange="updateCurrentPair(this.value)">
+      <option value="">Select Pair</option>
+    </select>
+    <a href="https://t.me/BandaFX77" class="contact-button" target="_blank">Contact</a>
+  </div>
+
+  <div class="charts-container" id="chartsContainer"></div>
+
+  <div class="overlay" id="overlay"></div>
+  
+  <div class="modal" id="newTabModal">
+    <h3>Create New Tab</h3>
+    <div class="modal-content">
+      <label>Tab Name:</label>
+      <input type="text" id="tabName" placeholder="Enter tab name" class="pair-selector">
+      
+      <label>Type an exchange & currency pair</label>
+      <small>Example FTX-BTCUSD</small>
+      <input type="text" id="pairInput" placeholder="PRESS ENTER TO ADD THE PAIRS" class="pair-selector">
+      
+      <div id="selectedPairsContainer"></div>
+      
+      <button onclick="removeSelectedPairs()" class="remove-button">Remove Selected Pairs</button>
+      
+      <div class="button-group">
+        <button onclick="saveNewTab()" class="create-button">Create Tab</button>
+        <button onclick="closeNewTabModal()" class="cancel-button">Cancel</button>
+      </div>
+    </div>
+  </div>
+    <div class="pair-item">OANDA:EURUSD</div>
+      <div class="pair-item">OANDA:GBPUSD</div>
+      <div class="pair-item">OANDA:USDJPY</div>
+      <div class="pair-item">OANDA:USDCHF</div>
+      <div class="pair-item">OANDA:AUDUSD</div>
+      <div class="pair-item">OANDA:USDCAD</div>
+      <div class="pair-item">OANDA:NZDUSD</div>
+      <div class="pair-item">OANDA:EURJPY</div>
+      <div class="pair-item">OANDA:GBPJPY</div>
+      <div class="pair-item">OANDA:EURGBP</div>
+      <div class="pair-item">OANDA:AUDCAD</div>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+      <button onclick="saveNewTab()" class="contact-button">Save Tab</button>
+      <button onclick="closeNewTabModal()" class="contact-button" style="background-color: #666;">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    const pairs = [
+      'OANDA:AUDCHF',
+      'OANDA:NZDCHF',
+      'BINANCE:BTCUSDT',
+      'BINANCE:ETHUSDT',
+      'OANDA:EURUSD',
+      'OANDA:GBPUSD',
+      'OANDA:USDJPY',
+      'OANDA:USDCHF'
+    ];
+
+    const allPairs = [
+      // Forex Pairs
+      'OANDA:EURUSD', 'OANDA:GBPUSD', 'OANDA:USDJPY', 'OANDA:USDCHF', 'OANDA:AUDUSD', 'OANDA:USDCAD',
+      'OANDA:NZDUSD', 'OANDA:EURJPY', 'OANDA:GBPJPY', 'OANDA:EURGBP', 'OANDA:AUDCAD', 'OANDA:AUDCHF',
+      'OANDA:AUDNZD', 'OANDA:EURCHF', 'OANDA:GBPCHF', 'OANDA:USDSGD', 'OANDA:EURAUD', 'OANDA:GBPAUD',
+      // Crypto Pairs
+      'BINANCE:BTCUSDT', 'BINANCE:ETHUSDT', 'BINANCE:BNBUSDT', 'BINANCE:ADAUSDT',
+      'BINANCE:DOGEUSDT', 'BINANCE:XRPUSDT', 'BINANCE:DOTUSDT', 'BINANCE:LINKUSDT',
+      'BINANCE:SOLUSDT', 'BINANCE:MATICUSDT', 'BINANCE:AVAXUSDT', 'BINANCE:UNIUSDT'
+    ];
+
+    let tabs = [];
+    let activeTab = null;
+    let selectedPairs = [];
+
+    // Load saved tabs on startup
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedTabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+      if (savedTabs.length > 0) {
+        tabs = savedTabs;
+        tabs.forEach(tab => createTabElement(tab));
+        activateTab(tabs[0].id);
+      } else {
+        createNewTab();
+      }
+      updatePairSelector();
+      
+      // Setup toggle controls
+      const toggleBtn = document.getElementById('toggleControls');
+      const controls = document.getElementById('controlsPanel');
+      const chartsContainer = document.querySelector('.charts-container');
+
+      toggleBtn.addEventListener('click', function() {
+        controls.classList.toggle('hidden');
+        this.classList.toggle('hidden');
+        
+        if (controls.classList.contains('hidden')) {
+          chartsContainer.style.marginRight = '0';
+        } else {
+          chartsContainer.style.marginRight = '200px';
+        }
+      });
+    });
+    
+    function closeNewTabModal() {
+      document.getElementById('overlay').style.display = 'none';
+      document.getElementById('newTabModal').style.display = 'none';
+    }
+    
+    function createNewTab() {
+      document.getElementById('overlay').style.display = 'block';
+      document.getElementById('newTabModal').style.display = 'block';
+      document.getElementById('tabName').value = `Tab ${tabs.length + 1}`;
+      selectedPairs = [];
+      
+      // Setup pair items click handlers
+      document.querySelectorAll('.pair-item').forEach(item => {
+        item.onclick = function() {
+          addPair(this.textContent);
+        };
+      });
+      
+      // Setup pair input
+      const pairInput = document.getElementById('pairInput');
+      pairInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const pair = this.value.trim().toUpperCase();
+          if (pair) {
+            addPair(pair);
+            this.value = '';
+          }
+        }
+      });
+    }
+    
+    function saveNewTab() {
+      const name = document.getElementById('tabName').value || `Tab ${tabs.length + 1}`;
+      const pairInput = document.getElementById('pairInput').value.trim();
+      
+      if (pairInput) {
+        selectedPairs.push(pairInput);
+      }
+      
+      if (selectedPairs.length === 0) {
+        // Default to first pair if none selected
+        selectedPairs.push('OANDA:EURUSD');
+      }
+
+      const tab = {
+        id: Date.now(),
+        name: name,
+        layout: {
+          count: selectedPairs.length,
+          symbols: selectedPairs
+        }
+      };
+    
+      tabs.push(tab);
+      createTabElement(tab);
+      activateTab(tab.id);
+      saveTabs();
+      closeNewTabModal();
+    }
+
+    function createTabElement(tab) {
+      const tabEl = document.createElement('div');
+      tabEl.className = 'tab';
+      tabEl.innerHTML = `
+        ${tab.name}
+        <span class="tab-close" onclick="closeTab(${tab.id})">×</span>
+      `;
+      tabEl.onclick = (e) => {
+        if (!e.target.classList.contains('tab-close')) {
+          activateTab(tab.id);
+        }
+      };
+      document.getElementById('tabBar').insertBefore(tabEl, document.querySelector('.new-tab'));
+    }
+
+    function activateTab(tabId) {
+      const tab = tabs.find(t => t.id === tabId);
+      if (!tab) return;
+
+      activeTab = tab;
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      document.querySelector(`.tab:nth-child(${tabs.indexOf(tab) + 1})`).classList.add('active');
+      setLayout(tab.layout.count, tab.layout.symbols);
+    }
+
+    function closeTab(tabId) {
+      const index = tabs.findIndex(t => t.id === tabId);
+      if (index === -1) return;
+
+      tabs.splice(index, 1);
+      document.querySelector(`.tab:nth-child(${index + 1})`).remove();
+      
+      if (tabs.length === 0) {
+        createNewTab();
+      } else if (activeTab.id === tabId) {
+        activateTab(tabs[0].id);
+      }
+      saveTabs();
+    }
+
+    function saveTabs() {
+      localStorage.setItem('tabs', JSON.stringify(tabs));
+    }
+
+    function updatePairSelector() {
+      const selector = document.getElementById('pairSelector');
+      selector.innerHTML = '<option value="">Select Pair</option>';
+      pairs.forEach(pair => {
+        selector.innerHTML += `<option value="${pair}">${pair}</option>`;
+      });
+    }
+
+    function updateCurrentPair(pair) {
+      if (!pair || !activeTab) return;
+      
+      const chartCount = parseInt(document.getElementById('chartCountSelector').value) || 1;
+      activeTab.layout = {
+        count: chartCount,
+        symbols: Array(chartCount).fill(pair)
+      };
+      setLayout(chartCount, activeTab.layout.symbols);
+      saveTabs();
+    }
+
+    function updateCurrentLayout(count) {
+      if (!count || !activeTab) return;
+      
+      const pair = document.getElementById('pairSelector').value || pairs[0];
+      activeTab.layout = {
+        count: parseInt(count),
+        symbols: Array(parseInt(count)).fill(pair)
+      };
+      setLayout(activeTab.layout.count, activeTab.layout.symbols);
+      saveTabs();
+    }
+    
+    function setLayout(count, symbols) {
+      const container = document.getElementById('chartsContainer');
+      container.innerHTML = '';
+
+      if (count <= 2) {
+        // Single row layout
+        symbols.forEach((symbol, i) => {
+          const chartContainer = createChartContainer(`chart${i}`, '100%', '100%');
+          container.appendChild(chartContainer);
+          createWidget(`chart${i}`, symbol);
+        });
+      } else {
+        // Two row layout
+        const topRow = document.createElement('div');
+        topRow.className = 'top-row';
+        const bottomRow = document.createElement('div');
+        bottomRow.className = 'bottom-row';
+        
+        const halfCount = Math.ceil(count / 2);
+        
+        symbols.forEach((symbol, i) => {
+          const width = `${100 / (i < halfCount ? halfCount : (count - halfCount))}%`;
+          const chartContainer = createChartContainer(`chart${i}`, width, '100%');
+          
+          if (i < halfCount) {
+            topRow.appendChild(chartContainer);
+          } else {
+            bottomRow.appendChild(chartContainer);
+          }
+          createWidget(`chart${i}`, symbol);
+        });
+        
+        container.appendChild(topRow);
+        container.appendChild(bottomRow);
+      }
+    }
+
+    function createChartContainer(id, width, height) {
+      const container = document.createElement('div');
+      container.className = 'chart-container';
+      container.style.width = width;
+      container.style.height = height;
+
+      const chart = document.createElement('div');
+      chart.className = 'chart';
+      chart.id = id;
+      chart.style.height = '100%';
+
+      container.appendChild(chart);
+      return container;
+    }
+
+    function createWidget(container, symbol) {
+      new TradingView.widget({
+        "autosize": true,
+        "symbol": symbol,
+        "interval": "D",
+        "timezone": "Etc/UTC",
+        "theme": "dark",
+        "style": "1",
+        "locale": "en",
+        "toolbar_bg": "#f1f3f6",
+        "enable_publishing": false,
+        "hide_side_toolbar": false,
+        "allow_symbol_change": true,
+        "container_id": container,
+        "hide_top_toolbar": false,
+        "hide_legend": false,
+        "save_image": false,
+        "height": "100%",
+        "width": "100%"
+      });
+    }
+  </script>
+</body>
+</html>
